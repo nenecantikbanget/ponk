@@ -1,0 +1,107 @@
+import curses
+import time
+
+def main(stdscr):
+    curses.curs_set(0)
+    stdscr.nodelay(True)
+    stdscr.timeout(20)
+
+    h, w = stdscr.getmaxyx()
+
+    # Paddle settings
+    paddle_height = 4
+
+    # Left paddle
+    left_x = 2
+    left_y = h // 2 - paddle_height // 2
+
+    # Right paddle
+    right_x = w - 3
+    right_y = h // 2 - paddle_height // 2
+
+    # Ball
+    ball_x = w // 2
+    ball_y = h // 2
+    vel_x = 1
+    vel_y = 1
+
+    score_left = 0
+    score_right = 0
+    win_score = 11  # First to 11 points wins
+
+    while True:
+        stdscr.clear()
+
+        # Draw left paddle
+        for i in range(paddle_height):
+            stdscr.addch(left_y + i, left_x, '|')
+
+        # Draw right paddle
+        for i in range(paddle_height):
+            stdscr.addch(right_y + i, right_x, '|')
+
+        # Draw ball
+        stdscr.addch(ball_y, ball_x, 'O')
+
+        # Draw score
+        stdscr.addstr(0, w//2 - 10, f"P1: {score_left}  |  P2: {score_right}")
+
+        # Check for winner
+        if score_left >= win_score:
+            stdscr.addstr(h // 2, w // 2 - 6, "Player 1 Wins!")
+            stdscr.refresh()
+            time.sleep(2)
+            break
+        if score_right >= win_score:
+            stdscr.addstr(h // 2, w // 2 - 6, "Player 2 Wins!")
+            stdscr.refresh()
+            time.sleep(2)
+            break
+
+        # Input
+        stdscr.keypad(True)
+        key = stdscr.getch()
+        if key == ord('w') and left_y > 1:
+            left_y -= 1
+        if key == ord('s') and left_y + paddle_height < h - 1:
+            left_y += 1
+        if key == ord('i') and right_y < -1:
+            right_y -= 1
+        if key == ord('k') and right_y + paddle_height > h - 1:
+            right_y += 1
+        if key == ord('q'):
+            break
+
+        # Move ball
+        ball_x += vel_x
+        ball_y += vel_y
+
+        # Bounce top/bottom
+        if ball_y <= 1 or ball_y >= h - 1:
+            vel_y *= -1
+
+        # Bounce on left paddle
+        if ball_x == left_x + 1 and left_y <= ball_y < left_y + paddle_height:
+            vel_x *= -1
+
+        # Bounce on right paddle
+        if ball_x == right_x - 1 and right_y <= ball_y < right_y + paddle_height:
+            vel_x *= -1
+
+        # Left player misses
+        if ball_x <= 0:
+            score_right += 1
+            ball_x, ball_y = w//2, h//2
+            vel_x = 1
+            time.sleep(0.5)
+
+        # Right player misses
+        if ball_x >= w - 1:
+            score_left += 1
+            ball_x, ball_y = w//2, h//2
+            vel_x = -1
+            time.sleep(0.5)
+
+        time.sleep(0.02)
+
+curses.wrapper(main)
